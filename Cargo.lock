@@ -267,6 +267,7 @@ name = "antbyte-gui"
 version = "0.1.0"
 dependencies = [
  "antbyte",
+ "anyhow",
  "eframe",
 ]
 

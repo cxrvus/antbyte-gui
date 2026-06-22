@@ -6,4 +6,5 @@ edition = "2024"
 
 [dependencies]
 antbyte = { path = "../antbyte" }
+anyhow = "*"
 eframe = "*"
