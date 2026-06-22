@@ -1,0 +1,9 @@
+[package]
+name = "antbyte-gui"
+authors = ["cxrvus"]
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+antbyte = { path = "../antbyte" }
+eframe = "*"
