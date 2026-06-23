@@ -59,6 +59,7 @@ struct AntbyteApp {
 	last_frame: Option<FrameOutput>,
 	stopped: bool,
 	next_frame_at: Instant,
+	pending_keys: String,
 	watch_rx: Option<Receiver<()>>,
 	restart_requested: Arc<AtomicBool>,
 }
@@ -74,6 +75,7 @@ impl AntbyteApp {
 			last_frame: None,
 			stopped: false,
 			next_frame_at: Instant::now(),
+			pending_keys: String::new(),
 			watch_rx,
 			restart_requested,
 		}
@@ -101,34 +103,44 @@ impl App for AntbyteApp {
 
 		if !self.stopped {
 			let now = Instant::now();
-			let keys_str = ui.input(|input| {
-				let mut keys_str = String::new();
-
+			let mut held_keys = String::new();
+			ui.input(|input| {
 				for key in &input.keys_down {
-					let key_str = key.symbol_or_name();
-
-					if key_str.len() == 1 {
-						let ch = key_str.chars().next().unwrap().to_ascii_lowercase();
-						if ch.is_ascii() && !keys_str.contains(ch) {
-							keys_str.push(ch);
-						}
+					if let Some(ch) = key_to_char(*key) {
+						push_unique_char(&mut held_keys, ch);
 					}
 				}
 
-				keys_str
+				for event in &input.events {
+					if let egui::Event::Key {
+						key,
+						pressed: true,
+						repeat: false,
+						..
+					} = event && let Some(ch) = key_to_char(*key)
+					{
+						push_unique_char(&mut self.pending_keys, ch);
+					}
+				}
 			});
 
-			let input = if let Some(keys) = keys {
-				antbyte::ui::chars_to_input(&Some(keys), &keys_str)
-			} else {
-				0
-			};
-
 			while now >= self.next_frame_at && !self.stopped {
+				let mut keys_str = held_keys.clone();
+				for ch in self.pending_keys.chars() {
+					push_unique_char(&mut keys_str, ch);
+				}
+
+				let input = if let Some(keys) = keys.as_ref() {
+					antbyte::ui::chars_to_input(&Some(keys.clone()), &keys_str)
+				} else {
+					0
+				};
+
 				if let Some(frame) = self.world.next_frame(&FrameInput { ext_in: input }) {
 					let frame_ms = frame.ms.unwrap_or(20);
 					self.last_frame = Some(frame);
 					self.next_frame_at += Duration::from_millis(frame_ms.into());
+					self.pending_keys.clear();
 				} else {
 					self.stopped = true;
 				}
@@ -185,6 +197,21 @@ impl App for AntbyteApp {
 				);
 			}
 		}
+	}
+}
+
+fn key_to_char(key: egui::Key) -> Option<char> {
+	let mut chars = key.symbol_or_name().chars();
+	match (chars.next(), chars.next()) {
+		(Some(ch), None) => Some(ch),
+		_ => None,
+	}
+}
+
+fn push_unique_char(target: &mut String, ch: char) {
+	let ch = ch.to_ascii_lowercase();
+	if ch.is_ascii() && !target.contains(ch) {
+		target.push(ch);
 	}
 }
 
