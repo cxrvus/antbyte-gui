@@ -43,8 +43,14 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 		..Default::default()
 	};
 
+	let title = if let Some(name) = world.name() {
+		format!("{name}   -   ANTBYTE")
+	} else {
+		"ANTBYTE".into()
+	};
+
 	eframe::run_native(
-		"ANTBYTE",
+		&title,
 		options,
 		Box::new(move |_| {
 			Ok(Box::new(AntbyteApp::new(
