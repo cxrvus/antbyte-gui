@@ -16,11 +16,12 @@ use eframe::{
 
 const TILE_PX: f32 = 10.0;
 const PADDING: f32 = 80.0;
+const MIN_SIZE: f32 = 32.0 * TILE_PX;
 
 pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
 	let WorldConfig { height, width, .. } = *world.config();
-	let height = TILE_PX * height as f32 + PADDING;
-	let width = TILE_PX * width as f32;
+	let height = (TILE_PX * height as f32 + PADDING).max(MIN_SIZE);
+	let width = (TILE_PX * width as f32).max(MIN_SIZE);
 	let restart_requested = Arc::new(AtomicBool::new(false));
 	let app_restart_requested = restart_requested.clone();
 
