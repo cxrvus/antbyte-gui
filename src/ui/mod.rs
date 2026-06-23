@@ -15,12 +15,12 @@ use eframe::{
 };
 
 const TILE_PX: f32 = 10.0;
-const PADDING: f32 = 20.0;
+const PADDING: f32 = 60.0;
 
 pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
 	let WorldConfig { height, width, .. } = *world.config();
 	let height = TILE_PX * height as f32 + PADDING;
-	let width = TILE_PX * width as f32 + PADDING;
+	let width = TILE_PX * width as f32;
 	let restart_requested = Arc::new(AtomicBool::new(false));
 	let app_restart_requested = restart_requested.clone();
 
@@ -86,7 +86,7 @@ impl App for AntbyteApp {
 		}
 
 		if let Some(frame) = self.last_frame.as_ref() {
-			egui::CentralPanel::default().show_inside(ui, |ui| {
+			ui.vertical(|ui| {
 				let size = Vec2::new(width as f32 * TILE_PX, height as f32 * TILE_PX);
 				let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
 				let painter = ui.painter_at(rect);
@@ -104,6 +104,9 @@ impl App for AntbyteApp {
 						painter.rect_filled(tile, 0.0, color);
 					}
 				}
+
+				let metadata = self.world.metadata_str();
+				ui.label(egui::RichText::new(metadata).monospace().size(16.0));
 			});
 
 			ui.request_repaint_after(Duration::from_millis(frame.ms.unwrap_or(20).into()));
