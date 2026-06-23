@@ -15,7 +15,7 @@ use eframe::{
 };
 
 const TILE_PX: f32 = 10.0;
-const PADDING: f32 = 60.0;
+const PADDING: f32 = 80.0;
 
 pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
 	let WorldConfig { height, width, .. } = *world.config();
@@ -46,6 +46,7 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 struct AntbyteApp {
 	world: World,
 	last_frame: Option<FrameOutput>,
+	stopped: bool,
 	watch_rx: Option<Receiver<()>>,
 	restart_requested: Arc<AtomicBool>,
 }
@@ -59,6 +60,7 @@ impl AntbyteApp {
 		Self {
 			world,
 			last_frame: None,
+			stopped: false,
 			watch_rx,
 			restart_requested,
 		}
@@ -79,9 +81,9 @@ impl App for AntbyteApp {
 			return;
 		}
 
-		let frame = self.world.next_frame_auto();
-
-		if let Some(frame) = frame {
+		if !self.stopped
+			&& let Some(frame) = self.world.next_frame_auto()
+		{
 			self.last_frame = Some(frame);
 		}
 
@@ -105,8 +107,28 @@ impl App for AntbyteApp {
 					}
 				}
 
-				let metadata = self.world.metadata_str();
-				ui.label(egui::RichText::new(metadata).monospace().size(16.0));
+				ui.add_space(8.0);
+				ui.horizontal(|ui| {
+					ui.label(
+						egui::RichText::new(self.world.metadata_str())
+							.monospace()
+							.size(16.0),
+					);
+
+					if !self.stopped {
+						ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+							if ui
+								.add_sized(
+									[120.0, 44.0],
+									egui::Button::new(egui::RichText::new("STOP").size(22.0)),
+								)
+								.clicked()
+							{
+								self.stopped = true;
+							}
+						});
+					}
+				});
 			});
 
 			ui.request_repaint_after(Duration::from_millis(frame.ms.unwrap_or(20).into()));
