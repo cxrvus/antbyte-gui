@@ -73,6 +73,7 @@ struct AntbyteApp {
 	tile_size: f32,
 	last_frame: Option<FrameOutput>,
 	stopped: bool,
+	step_mode: bool,
 	next_frame_at: Instant,
 	pending_keys: String,
 	watch_rx: Option<Receiver<()>>,
@@ -91,6 +92,7 @@ impl AntbyteApp {
 			tile_size,
 			last_frame: None,
 			stopped: false,
+			step_mode: false,
 			next_frame_at: Instant::now(),
 			pending_keys: String::new(),
 			watch_rx,
@@ -141,7 +143,13 @@ impl App for AntbyteApp {
 				}
 			});
 
-			while now >= self.next_frame_at && !self.stopped {
+			let should_advance = if self.step_mode {
+				!self.pending_keys.is_empty()
+			} else {
+				now >= self.next_frame_at
+			};
+
+			if should_advance {
 				let mut keys_str = held_keys.clone();
 				for ch in self.pending_keys.chars() {
 					push_unique_char(&mut keys_str, ch);
@@ -154,10 +162,15 @@ impl App for AntbyteApp {
 				};
 
 				if let Some(frame) = self.world.next_frame(&FrameInput { ext_in: input }) {
-					let frame_ms = frame.ms.unwrap_or(20);
+					let frame_ms = frame.ms;
 					self.last_frame = Some(frame);
-					self.next_frame_at += Duration::from_millis(frame_ms.into());
 					self.pending_keys.clear();
+					if let Some(frame_ms) = frame_ms {
+						self.step_mode = false;
+						self.next_frame_at += Duration::from_millis(frame_ms.into());
+					} else {
+						self.step_mode = true;
+					}
 				} else {
 					self.stopped = true;
 				}
@@ -210,12 +223,14 @@ impl App for AntbyteApp {
 					}
 				});
 			});
+		}
 
-			if !self.stopped {
-				ui.request_repaint_after(
-					self.next_frame_at.saturating_duration_since(Instant::now()),
-				);
-			}
+		if !self.stopped {
+			ui.request_repaint_after(if self.step_mode {
+				Duration::from_millis(30)
+			} else {
+				self.next_frame_at.saturating_duration_since(Instant::now())
+			});
 		}
 	}
 }
