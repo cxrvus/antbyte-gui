@@ -3,7 +3,7 @@ use std::sync::{
 	atomic::{AtomicBool, Ordering},
 	mpsc::Receiver,
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use antbyte::{
 	util::vec2::Pos,
@@ -58,6 +58,7 @@ struct AntbyteApp {
 	world: World,
 	last_frame: Option<FrameOutput>,
 	stopped: bool,
+	next_frame_at: Instant,
 	watch_rx: Option<Receiver<()>>,
 	restart_requested: Arc<AtomicBool>,
 }
@@ -72,6 +73,7 @@ impl AntbyteApp {
 			world,
 			last_frame: None,
 			stopped: false,
+			next_frame_at: Instant::now(),
 			watch_rx,
 			restart_requested,
 		}
@@ -98,6 +100,7 @@ impl App for AntbyteApp {
 		}
 
 		if !self.stopped {
+			let now = Instant::now();
 			let keys_str = ui.input(|input| {
 				let mut keys_str = String::new();
 
@@ -121,10 +124,14 @@ impl App for AntbyteApp {
 				0
 			};
 
-			if let Some(frame) = self.world.next_frame(&FrameInput { ext_in: input }) {
-				self.last_frame = Some(frame);
-			} else {
-				self.stopped = true;
+			while now >= self.next_frame_at && !self.stopped {
+				if let Some(frame) = self.world.next_frame(&FrameInput { ext_in: input }) {
+					let frame_ms = frame.ms.unwrap_or(20);
+					self.last_frame = Some(frame);
+					self.next_frame_at += Duration::from_millis(frame_ms.into());
+				} else {
+					self.stopped = true;
+				}
 			}
 		}
 
@@ -172,7 +179,11 @@ impl App for AntbyteApp {
 				});
 			});
 
-			ui.request_repaint_after(Duration::from_millis(frame.ms.unwrap_or(20).into()));
+			if !self.stopped {
+				ui.request_repaint_after(
+					self.next_frame_at.saturating_duration_since(Instant::now()),
+				);
+			}
 		}
 	}
 }
