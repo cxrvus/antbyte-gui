@@ -1,3 +1,8 @@
+use std::sync::{
+	Arc,
+	atomic::{AtomicBool, Ordering},
+	mpsc::Receiver,
+};
 use std::time::Duration;
 
 use antbyte::{
@@ -12,10 +17,12 @@ use eframe::{
 const TILE_PX: f32 = 10.0;
 const PADDING: f32 = 20.0;
 
-pub fn run(world: &World) -> eframe::Result<()> {
+pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
 	let WorldConfig { height, width, .. } = *world.config();
 	let height = TILE_PX * height as f32 + PADDING;
 	let width = TILE_PX * width as f32 + PADDING;
+	let restart_requested = Arc::new(AtomicBool::new(false));
+	let app_restart_requested = restart_requested.clone();
 
 	let options = eframe::NativeOptions {
 		viewport: egui::ViewportBuilder::default().with_inner_size([width, height]),
@@ -25,20 +32,35 @@ pub fn run(world: &World) -> eframe::Result<()> {
 	eframe::run_native(
 		"ANTBYTE",
 		options,
-		Box::new(|_| Ok(Box::new(AntbyteApp::new(world.clone())))),
+		Box::new(move |_| {
+			Ok(Box::new(AntbyteApp::new(
+				world.clone(),
+				watch_rx,
+				app_restart_requested,
+			)))
+		}),
 	)
+	.map(|_| restart_requested.load(Ordering::Relaxed))
 }
 
 struct AntbyteApp {
 	world: World,
 	last_frame: Option<FrameOutput>,
+	watch_rx: Option<Receiver<()>>,
+	restart_requested: Arc<AtomicBool>,
 }
 
 impl AntbyteApp {
-	pub fn new(world: World) -> Self {
+	pub fn new(
+		world: World,
+		watch_rx: Option<Receiver<()>>,
+		restart_requested: Arc<AtomicBool>,
+	) -> Self {
 		Self {
 			world,
 			last_frame: None,
+			watch_rx,
+			restart_requested,
 		}
 	}
 }
@@ -46,7 +68,16 @@ impl AntbyteApp {
 impl App for AntbyteApp {
 	fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
 		let WorldConfig { height, width, .. } = *self.world.config();
-		// let (height, width) = (*height as u32, *width as u32);
+
+		if self
+			.watch_rx
+			.as_ref()
+			.is_some_and(|rx| rx.try_recv().is_ok())
+		{
+			self.restart_requested.store(true, Ordering::Relaxed);
+			ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+			return;
+		}
 
 		let frame = self.world.next_frame_auto();
 

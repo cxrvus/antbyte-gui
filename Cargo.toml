@@ -8,3 +8,4 @@ edition = "2024"
 antbyte = { path = "../antbyte" }
 anyhow = "*"
 eframe = "*"
+notify = "*"
