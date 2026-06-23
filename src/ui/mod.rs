@@ -88,10 +88,12 @@ impl App for AntbyteApp {
 			return;
 		}
 
-		if !self.stopped
-			&& let Some(frame) = self.world.next_frame_auto()
-		{
-			self.last_frame = Some(frame);
+		if !self.stopped {
+			if let Some(frame) = self.world.next_frame_auto() {
+				self.last_frame = Some(frame);
+			} else {
+				self.stopped = true;
+			}
 		}
 
 		if let Some(frame) = self.last_frame.as_ref() {
