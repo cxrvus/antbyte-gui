@@ -18,14 +18,25 @@ use eframe::{
 	egui::{self, Color32, Pos2, Rect, Sense, Vec2},
 };
 
-const TILE_PX: f32 = 10.0;
+const TILE_SIZE: f32 = 10.0;
+const TILE_CAP: f32 = 80.0;
 const PADDING: f32 = 80.0;
-const MIN_SIZE: f32 = 32.0 * TILE_PX;
+const MIN_SIZE: f32 = 32.0 * TILE_SIZE;
 
 pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
 	let WorldConfig { height, width, .. } = *world.config();
-	let height = (TILE_PX * height as f32 + PADDING).max(MIN_SIZE);
-	let width = (TILE_PX * width as f32).max(MIN_SIZE);
+
+	let (height, width) = (height as f32, width as f32);
+
+	let tile_size = if height.max(width) <= TILE_CAP {
+		TILE_SIZE
+	} else {
+		TILE_SIZE / 2.0
+	};
+
+	let height = (tile_size * height + PADDING).max(MIN_SIZE);
+	let width = (tile_size * width).max(MIN_SIZE);
+
 	let restart_requested = Arc::new(AtomicBool::new(false));
 	let app_restart_requested = restart_requested.clone();
 
@@ -42,6 +53,7 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 		Box::new(move |_| {
 			Ok(Box::new(AntbyteApp::new(
 				world.clone(),
+				tile_size,
 				watch_rx,
 				app_restart_requested,
 			)))
@@ -56,6 +68,7 @@ fn app_icon() -> egui::IconData {
 
 struct AntbyteApp {
 	world: World,
+	tile_size: f32,
 	last_frame: Option<FrameOutput>,
 	stopped: bool,
 	next_frame_at: Instant,
@@ -67,11 +80,13 @@ struct AntbyteApp {
 impl AntbyteApp {
 	pub fn new(
 		world: World,
+		tile_size: f32,
 		watch_rx: Option<Receiver<()>>,
 		restart_requested: Arc<AtomicBool>,
 	) -> Self {
 		Self {
 			world,
+			tile_size,
 			last_frame: None,
 			stopped: false,
 			next_frame_at: Instant::now(),
@@ -149,7 +164,10 @@ impl App for AntbyteApp {
 
 		if let Some(frame) = self.last_frame.as_ref() {
 			ui.vertical(|ui| {
-				let size = Vec2::new(width as f32 * TILE_PX, height as f32 * TILE_PX);
+				let size = Vec2::new(
+					width as f32 * self.tile_size,
+					height as f32 * self.tile_size,
+				);
 				let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
 				let painter = ui.painter_at(rect);
 
@@ -159,10 +177,10 @@ impl App for AntbyteApp {
 						let color = PALETTE[*value as usize];
 
 						let min = Pos2::new(
-							rect.left() + x as f32 * TILE_PX,
-							rect.top() + y as f32 * TILE_PX,
+							rect.left() + x as f32 * self.tile_size,
+							rect.top() + y as f32 * self.tile_size,
 						);
-						let tile = Rect::from_min_size(min, Vec2::splat(TILE_PX));
+						let tile = Rect::from_min_size(min, Vec2::splat(self.tile_size));
 						painter.rect_filled(tile, 0.0, color);
 					}
 				}
