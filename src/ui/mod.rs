@@ -25,7 +25,9 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 	let app_restart_requested = restart_requested.clone();
 
 	let options = eframe::NativeOptions {
-		viewport: egui::ViewportBuilder::default().with_inner_size([width, height]),
+		viewport: egui::ViewportBuilder::default()
+			.with_icon(app_icon())
+			.with_inner_size([width, height]),
 		..Default::default()
 	};
 
@@ -41,6 +43,10 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 		}),
 	)
 	.map(|_| restart_requested.load(Ordering::Relaxed))
+}
+
+fn app_icon() -> egui::IconData {
+	eframe::icon_data::from_png_bytes(include_bytes!("../../assets/antbyte_logo.png")).unwrap()
 }
 
 struct AntbyteApp {
