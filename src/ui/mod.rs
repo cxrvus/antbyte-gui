@@ -7,7 +7,11 @@ use std::time::Duration;
 
 use antbyte::{
 	util::vec2::Pos,
-	world::{World, config::WorldConfig, frame::FrameOutput},
+	world::{
+		World,
+		config::WorldConfig,
+		frame::{FrameInput, FrameOutput},
+	},
 };
 use eframe::{
 	App,
@@ -76,7 +80,12 @@ impl AntbyteApp {
 
 impl App for AntbyteApp {
 	fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-		let WorldConfig { height, width, .. } = *self.world.config();
+		let WorldConfig {
+			height,
+			width,
+			keys,
+			..
+		} = self.world.config().clone();
 
 		if self
 			.watch_rx
@@ -89,7 +98,30 @@ impl App for AntbyteApp {
 		}
 
 		if !self.stopped {
-			if let Some(frame) = self.world.next_frame_auto() {
+			let keys_str = ui.input(|input| {
+				let mut keys_str = String::new();
+
+				for key in &input.keys_down {
+					let key_str = key.symbol_or_name();
+
+					if key_str.len() == 1 {
+						let ch = key_str.chars().next().unwrap().to_ascii_lowercase();
+						if ch.is_ascii() && !keys_str.contains(ch) {
+							keys_str.push(ch);
+						}
+					}
+				}
+
+				keys_str
+			});
+
+			let input = if let Some(keys) = keys {
+				antbyte::ui::chars_to_input(&Some(keys), &keys_str)
+			} else {
+				0
+			};
+
+			if let Some(frame) = self.world.next_frame(&FrameInput { ext_in: input }) {
 				self.last_frame = Some(frame);
 			} else {
 				self.stopped = true;
