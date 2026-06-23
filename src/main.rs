@@ -3,17 +3,15 @@ use anyhow::Result;
 mod ui;
 
 fn main() {
-	fn main() {
-		run().unwrap_or_else(|e| {
-			print_error(e);
-			std::process::exit(1);
-		});
-	}
+	run().unwrap_or_else(|e| {
+		print_error(e);
+		std::process::exit(1);
+	});
 }
 
 fn run() -> Result<()> {
 	if let Some((world, _args)) = antbyte::cli::create_world()? {
-		ui::run(&world);
+		ui::run(&world)?;
 	}
 
 	Ok(())
