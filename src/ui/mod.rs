@@ -28,11 +28,7 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 
 	let (height, width) = (height as f32, width as f32);
 
-	let tile_size = if height.max(width) <= TILE_CAP {
-		TILE_SIZE
-	} else {
-		TILE_SIZE / 2.0
-	};
+	let tile_size: f32 = TILE_SIZE / (height.max(width).div_euclid(TILE_CAP) + 1.0);
 
 	let height = (tile_size * height + PADDING).max(MIN_SIZE);
 	let width = (tile_size * width).max(MIN_SIZE);
