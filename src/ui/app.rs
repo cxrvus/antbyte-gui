@@ -246,6 +246,10 @@ impl App for AntbyteApp {
 }
 
 fn key_to_char(key: egui::Key) -> Option<char> {
+	if key == egui::Key::Space {
+		return Some(' ');
+	}
+
 	let mut chars = key.symbol_or_name().chars();
 	match (chars.next(), chars.next()) {
 		(Some(ch), None) => Some(ch),
