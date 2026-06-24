@@ -15,7 +15,7 @@ use antbyte::{
 };
 use eframe::{
 	App,
-	egui::{self, Align2, Color32, FontId, Pos2, Rect, Sense, Vec2},
+	egui::{self, Align2, Color32, FontId, Pos2, Rect, Sense, Stroke, StrokeKind, Vec2},
 };
 
 pub struct AntbyteApp {
@@ -191,6 +191,24 @@ impl App for AntbyteApp {
 						}
 					}
 				}
+
+				// visual world border
+				let frame_rect = Rect::from_min_size(
+					Pos2::new(
+						rect.left() + self.pan_offset.x,
+						rect.top() + self.pan_offset.y,
+					),
+					Vec2::new(
+						width as f32 * self.tile_size * self.zoom,
+						height as f32 * self.tile_size * self.zoom,
+					),
+				);
+				painter.rect_stroke(
+					frame_rect,
+					0.0,
+					Stroke::new(5.0, Color32::from_rgb(0x00, 0x33, 0x00)),
+					StrokeKind::Inside,
+				);
 
 				ui.add_space(8.0);
 				ui.horizontal(|ui| {
