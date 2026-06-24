@@ -10,9 +10,9 @@ use std::sync::{
 use antbyte::world::{World, config::WorldConfig};
 use eframe::egui;
 
-const TILE_SIZE: f32 = 10.0;
-const TILE_CAP: f32 = 80.0;
-const PADDING: f32 = 80.0;
+const TILE_SIZE: f32 = 13.0;
+const TILE_CAP: f32 = 64.0;
+const PADDING: f32 = 100.0;
 const MIN_SIZE: f32 = 32.0 * TILE_SIZE;
 
 pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
@@ -20,7 +20,7 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 
 	let (height, width) = (height as f32, width as f32);
 
-	let tile_size: f32 = TILE_SIZE / (height.max(width).div_euclid(TILE_CAP) + 1.0);
+	let tile_size: f32 = TILE_SIZE / (height.max(width).div_euclid(TILE_CAP + 1.0) + 1.0);
 
 	let height = (tile_size * height + PADDING).max(MIN_SIZE);
 	let width = (tile_size * width).max(MIN_SIZE);
