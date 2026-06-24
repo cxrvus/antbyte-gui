@@ -6,16 +6,16 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 use antbyte::{
-	util::vec2::Pos,
+	util::{dir::Direction, vec2::Pos},
 	world::{
 		World,
-		config::WorldConfig,
+		config::{RenderMask, WorldConfig},
 		frame::{FrameInput, FrameOutput},
 	},
 };
 use eframe::{
 	App,
-	egui::{self, Color32, Pos2, Rect, Sense, Vec2},
+	egui::{self, Align2, Color32, FontId, Pos2, Rect, Sense, Vec2},
 };
 
 pub struct AntbyteApp {
@@ -138,15 +138,37 @@ impl App for AntbyteApp {
 
 				for y in 0..height {
 					for x in 0..width {
-						let value = frame.bg.get(&Pos { x, y }).unwrap_or(&0);
-						let color = PALETTE[*value as usize];
+						let bg_value = frame.bg.get(&Pos { x, y }).unwrap_or(&0);
+						let bg_color = PALETTE[(*bg_value & 0b1111) as usize];
 
 						let min = Pos2::new(
 							rect.left() + x as f32 * self.tile_size,
 							rect.top() + y as f32 * self.tile_size,
 						);
+
 						let tile = Rect::from_min_size(min, Vec2::splat(self.tile_size));
-						painter.rect_filled(tile, 0.0, color);
+
+						painter.rect_filled(tile, 0.0, bg_color);
+
+						if self.world.config().fg != RenderMask::None
+							&& let Some(fg_value) = frame.fg.get(&Pos { x, y })
+						{
+							let fg_str = match self.world.config().fg {
+								RenderMask::Dir => &Direction::from(*fg_value).as_string(),
+								_ => &format!("{fg_value:02X}"),
+							};
+
+							let fg_color_value = (bg_value & 0b1111) ^ 0b1000;
+							let fg_color = PALETTE[fg_color_value as usize];
+
+							painter.text(
+								tile.center(),
+								Align2::CENTER_CENTER,
+								fg_str,
+								FontId::monospace(self.tile_size),
+								fg_color,
+							);
+						}
 					}
 				}
 
