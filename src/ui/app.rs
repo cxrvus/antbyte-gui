@@ -103,7 +103,7 @@ impl App for AntbyteApp {
 			});
 
 			let should_advance = if self.step_mode {
-				!self.pending_keys.is_empty()
+				!held_keys.is_empty()
 			} else {
 				now >= self.next_frame_at
 			};
