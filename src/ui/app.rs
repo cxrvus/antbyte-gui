@@ -21,6 +21,8 @@ use eframe::{
 pub struct AntbyteApp {
 	world: World,
 	tile_size: f32,
+	zoom: f32,
+	pan_offset: Vec2,
 	last_frame: Option<FrameOutput>,
 	stopped: bool,
 	step_mode: bool,
@@ -40,6 +42,8 @@ impl AntbyteApp {
 		Self {
 			world,
 			tile_size,
+			zoom: 1.0,
+			pan_offset: Vec2::ZERO,
 			last_frame: None,
 			stopped: false,
 			step_mode: false,
@@ -59,6 +63,11 @@ impl App for AntbyteApp {
 			keys,
 			..
 		} = self.world.config().clone();
+
+		let zoom_delta = ui.input(|input| input.zoom_delta());
+		if (zoom_delta - 1.0).abs() > f32::EPSILON {
+			self.zoom = (self.zoom * zoom_delta).clamp(0.25, 8.0);
+		}
 
 		if self
 			.watch_rx
@@ -130,11 +139,21 @@ impl App for AntbyteApp {
 		if let Some(frame) = self.last_frame.as_ref() {
 			ui.vertical(|ui| {
 				let size = Vec2::new(
-					width as f32 * self.tile_size,
-					height as f32 * self.tile_size,
+					width as f32 * self.tile_size * self.zoom,
+					height as f32 * self.tile_size * self.zoom,
 				);
 				let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
 				let painter = ui.painter_at(rect);
+
+				if ui.input(|input| input.pointer.primary_down())
+					&& ui.input(|input| {
+						input
+							.pointer
+							.hover_pos()
+							.is_some_and(|pos| rect.contains(pos))
+					}) {
+					self.pan_offset += ui.input(|input| input.pointer.delta());
+				}
 
 				for y in 0..height {
 					for x in 0..width {
@@ -142,11 +161,12 @@ impl App for AntbyteApp {
 						let bg_color = PALETTE[(*bg_value & 0b1111) as usize];
 
 						let min = Pos2::new(
-							rect.left() + x as f32 * self.tile_size,
-							rect.top() + y as f32 * self.tile_size,
+							rect.left() + self.pan_offset.x + x as f32 * self.tile_size * self.zoom,
+							rect.top() + self.pan_offset.y + y as f32 * self.tile_size * self.zoom,
 						);
 
-						let tile = Rect::from_min_size(min, Vec2::splat(self.tile_size));
+						let tile =
+							Rect::from_min_size(min, Vec2::splat(self.tile_size * self.zoom));
 
 						painter.rect_filled(tile, 0.0, bg_color);
 
@@ -165,7 +185,7 @@ impl App for AntbyteApp {
 								tile.center(),
 								Align2::CENTER_CENTER,
 								fg_str,
-								FontId::monospace(self.tile_size),
+								FontId::monospace(self.tile_size * self.zoom * 0.8),
 								fg_color,
 							);
 						}
