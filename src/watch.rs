@@ -1,4 +1,7 @@
-use notify::{Event, RecursiveMode, Result, Watcher};
+use notify::{
+	Event, RecursiveMode, Result, Watcher,
+	event::{EventKind, ModifyKind},
+};
 use std::{path::PathBuf, sync::mpsc, thread};
 
 pub fn watch(path: PathBuf) -> Result<mpsc::Receiver<()>> {
@@ -15,8 +18,8 @@ pub fn watch(path: PathBuf) -> Result<mpsc::Receiver<()>> {
 			return;
 		}
 
-		for event in event_rx {
-			if event.is_ok() {
+		for ev in event_rx.into_iter().flatten() {
+			if let EventKind::Modify(ModifyKind::Data(_)) = ev.kind {
 				let _ = restart_tx.send(());
 			}
 		}
