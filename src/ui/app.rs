@@ -218,19 +218,29 @@ impl App for AntbyteApp {
 							.size(16.0),
 					);
 
-					if !self.stopped {
-						ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-							if ui
+					ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+						if ui
+							.add_sized(
+								[120.0, 44.0],
+								egui::Button::new(egui::RichText::new("RESTART").size(22.0)),
+							)
+							.clicked()
+						{
+							self.restart_requested.store(true, Ordering::Relaxed);
+							ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
+						}
+
+						if !self.stopped
+							&& ui
 								.add_sized(
 									[120.0, 44.0],
 									egui::Button::new(egui::RichText::new("STOP").size(22.0)),
 								)
 								.clicked()
-							{
-								self.stopped = true;
-							}
-						});
-					}
+						{
+							self.stopped = true;
+						}
+					});
 				});
 			});
 		}
