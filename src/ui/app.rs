@@ -6,6 +6,7 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 use antbyte::{
+	midi::MidiPlayer,
 	util::{dir::Direction, vec2::Pos},
 	world::{
 		World,
@@ -20,6 +21,7 @@ use eframe::{
 
 pub struct AntbyteApp {
 	world: World,
+	midi_player: MidiPlayer,
 	tile_size: f32,
 	zoom: f32,
 	pan_offset: Vec2,
@@ -39,8 +41,11 @@ impl AntbyteApp {
 		watch_rx: Option<Receiver<()>>,
 		restart_requested: Arc<AtomicBool>,
 	) -> Self {
+		let midi_player = MidiPlayer::new(world.config().midi.clone()).unwrap();
+
 		Self {
 			world,
+			midi_player,
 			tile_size,
 			zoom: 1.0,
 			pan_offset: Vec2::ZERO,
@@ -122,8 +127,11 @@ impl App for AntbyteApp {
 
 				if let Some(frame) = self.world.next_frame(&FrameInput { ext_in: input }) {
 					let frame_ms = frame.ms;
-					self.last_frame = Some(frame);
+					self.last_frame = Some(frame.clone());
 					self.pending_keys.clear();
+
+					self.midi_player.transmit(&frame.ext_out);
+
 					if let Some(frame_ms) = frame_ms {
 						self.step_mode = false;
 						self.next_frame_at += Duration::from_millis(frame_ms.into());

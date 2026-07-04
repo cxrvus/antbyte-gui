@@ -5,7 +5,7 @@ version = "0.1.1"
 edition = "2024"
 
 [dependencies]
-antbyte = { path = "../antbyte", default-features = false, features = ["clap"]}
+antbyte = { path = "../antbyte", default-features = false, features = ["clap", "midi"]}
 anyhow = "*"
 eframe = "*"
 notify = "*"
