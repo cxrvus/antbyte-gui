@@ -31,6 +31,7 @@ pub struct AntbyteApp {
 	next_frame_at: Instant,
 	pending_keys: String,
 	watch_rx: Option<Receiver<()>>,
+	ctrl_c_rx: Option<Receiver<()>>,
 	restart_requested: Arc<AtomicBool>,
 }
 
@@ -42,6 +43,7 @@ impl AntbyteApp {
 		restart_requested: Arc<AtomicBool>,
 	) -> Self {
 		let midi_player = MidiPlayer::new(world.config().midi.clone()).unwrap();
+		let ctrl_c_rx = antbyte::util::setup_ctrl_c();
 
 		Self {
 			world,
@@ -55,6 +57,7 @@ impl AntbyteApp {
 			next_frame_at: Instant::now(),
 			pending_keys: String::new(),
 			watch_rx,
+			ctrl_c_rx,
 			restart_requested,
 		}
 	}
@@ -82,6 +85,15 @@ impl App for AntbyteApp {
 			self.restart_requested.store(true, Ordering::Relaxed);
 			ui.ctx().send_viewport_cmd(egui::ViewportCommand::Close);
 			return;
+		}
+
+		if self
+			.ctrl_c_rx
+			.as_ref()
+			.is_some_and(|rx| rx.try_recv().is_ok())
+		{
+			self.midi_player.close();
+			std::process::exit(2);
 		}
 
 		if !self.stopped {
