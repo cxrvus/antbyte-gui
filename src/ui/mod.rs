@@ -15,7 +15,11 @@ const PADDING: f32 = 100.0;
 const MIN_SIZE: f32 = 720.0;
 const MAX_SIZE: f32 = 800.0;
 
-pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::Result<bool> {
+pub fn run_with_watch(
+	world: &World,
+	watch_rx: Option<Receiver<()>>,
+	quiet: bool,
+) -> eframe::Result<bool> {
 	let WorldConfig { height, width, .. } = *world.config();
 
 	let (height, width) = (height as f32, width as f32);
@@ -49,6 +53,7 @@ pub fn run_with_watch(world: &World, watch_rx: Option<Receiver<()>>) -> eframe::
 		Box::new(move |_| {
 			Ok(Box::new(AntbyteApp::new(
 				world.clone(),
+				quiet,
 				tile_size,
 				watch_rx,
 				app_restart_requested,

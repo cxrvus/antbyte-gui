@@ -18,7 +18,7 @@ fn run() -> Result<()> {
 		};
 
 		let watch_rx = watch::watch(args.path)?;
-		if !ui::run_with_watch(&world, Some(watch_rx))? {
+		if !ui::run_with_watch(&world, Some(watch_rx), args.quiet)? {
 			break;
 		}
 	}

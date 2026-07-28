@@ -21,6 +21,7 @@ use eframe::{
 
 pub struct AntbyteApp {
 	world: World,
+	quiet: bool,
 	midi_player: MidiPlayer,
 	tile_size: f32,
 	zoom: f32,
@@ -38,6 +39,7 @@ pub struct AntbyteApp {
 impl AntbyteApp {
 	pub fn new(
 		world: World,
+		quiet: bool,
 		tile_size: f32,
 		watch_rx: Option<Receiver<()>>,
 		restart_requested: Arc<AtomicBool>,
@@ -47,6 +49,7 @@ impl AntbyteApp {
 
 		Self {
 			world,
+			quiet,
 			midi_player,
 			tile_size,
 			zoom: 1.0,
@@ -232,11 +235,13 @@ impl App for AntbyteApp {
 
 				ui.add_space(8.0);
 				ui.horizontal(|ui| {
-					ui.label(
-						egui::RichText::new(self.world.metadata_str())
-							.monospace()
-							.size(16.0),
-					);
+					if !self.quiet {
+						ui.label(
+							egui::RichText::new(self.world.metadata_str())
+								.monospace()
+								.size(16.0),
+						);
+					}
 
 					ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
 						if ui
