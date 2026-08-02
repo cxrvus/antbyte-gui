@@ -135,7 +135,7 @@ impl App for AntbyteApp {
 				}
 
 				let input = if let Some(keys) = keys.as_ref() {
-					antbyte::ui::chars_to_input(&Some(keys.clone()), &keys_str)
+					antbyte::ui::chars_to_input(Some(keys), &keys_str)
 				} else {
 					0
 				};
