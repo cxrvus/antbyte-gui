@@ -197,7 +197,7 @@ impl App for AntbyteApp {
 							&& let Some(fg_value) = frame.fg.get(&Pos { x, y })
 						{
 							let fg_str = match self.world.config().fg {
-								RenderMask::Dir => &Direction::from(*fg_value).as_string(),
+								RenderMask::Dir => &Direction::from_u8(*fg_value).as_string(),
 								_ => &format!("{fg_value:02X}"),
 							};
 
