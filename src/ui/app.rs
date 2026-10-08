@@ -46,6 +46,7 @@ impl AntbyteApp {
 	) -> Self {
 		let midi_player = MidiPlayer::new(world.config().midi.clone()).unwrap();
 		let ctrl_c_rx = antbyte::util::setup_ctrl_c();
+		let step_mode = world.config().stepped;
 
 		Self {
 			world,
@@ -56,7 +57,7 @@ impl AntbyteApp {
 			pan_offset: Vec2::ZERO,
 			last_frame: None,
 			stopped: false,
-			step_mode: false,
+			step_mode,
 			next_frame_at: Instant::now(),
 			pending_keys: String::new(),
 			watch_rx,
@@ -147,11 +148,8 @@ impl App for AntbyteApp {
 
 					self.midi_player.transmit(&frame.ext_out);
 
-					if let Some(frame_ms) = frame_ms {
-						self.step_mode = false;
+					if !self.step_mode {
 						self.next_frame_at += Duration::from_millis(frame_ms.into());
-					} else {
-						self.step_mode = true;
 					}
 				} else {
 					self.stopped = true;
