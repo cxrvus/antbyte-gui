@@ -227,7 +227,7 @@ impl App for AntbyteApp {
 				painter.rect_stroke(
 					frame_rect,
 					0.0,
-					Stroke::new(1.0, Color32::from_rgb(0x00, 0x33, 0x00)),
+					Stroke::new(1.0_f32, Color32::from_rgb(0x00, 0x33, 0x00)),
 					StrokeKind::Inside,
 				);
 
