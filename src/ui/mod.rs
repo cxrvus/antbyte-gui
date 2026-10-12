@@ -37,6 +37,7 @@ pub fn run_with_watch(
 	let options = eframe::NativeOptions {
 		viewport: egui::ViewportBuilder::default()
 			.with_icon(app_icon())
+			.with_fullscreen(true)
 			.with_inner_size([width, height]),
 		..Default::default()
 	};
